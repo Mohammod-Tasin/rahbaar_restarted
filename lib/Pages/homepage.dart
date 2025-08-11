@@ -166,7 +166,7 @@ class _HomepageState extends State<Homepage> {
                     child: SearchBar(
                       controller: _searchController,
                       focusNode: _searchFocusNode,
-                      hintText: "Search alumni, students ...",
+                      hintText: "This searchbar is under construction...",
                       leading: const Icon(Icons.search),
                       elevation: WidgetStateProperty.all(2),
                       shadowColor: WidgetStateProperty.all(Colors.black26),
