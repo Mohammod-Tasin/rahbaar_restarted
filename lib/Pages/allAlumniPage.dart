@@ -75,7 +75,7 @@ class _AllalumnipageState extends State<Allalumnipage> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TypeAheadField<Map<String, dynamic>>(
-              debounceDuration: const Duration(milliseconds: 500),
+              // debounceDuration: const Duration(milliseconds: 500),
               controller: _searchController,
               suggestionsCallback: (pattern) async {
                 return await _searchAlumniInDatabase(pattern);
