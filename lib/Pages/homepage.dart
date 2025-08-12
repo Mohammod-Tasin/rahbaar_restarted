@@ -5,6 +5,14 @@ import 'package:rahbar_restarted/Pages/allAlumniPage.dart';
 import 'package:rahbar_restarted/Pages/queriPage.dart';
 import 'package:rahbar_restarted/Pages/currentStudentPage.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb; // Web প্ল্যাটফর্ম চেক করার জন্য
+import 'dart:io' show Platform; // Android ও Windows প্ল্যাটফর্ম চেক করার জন্য
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:ota_update/ota_update.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
   @override
@@ -24,6 +32,8 @@ class _HomepageState extends State<Homepage> {
         _isSearchFocused = _searchFocusNode.hasFocus;
       });
     });
+    // ===== অ্যাপ চালু হওয়ার সময় আপডেট চেক করার জন্য ফাংশন কল =====
+    _checkForUpdate();
   }
 
   @override
@@ -33,7 +43,112 @@ class _HomepageState extends State<Homepage> {
     super.dispose();
   }
 
-  // একটি helper widget যা প্রতিটি কার্ড তৈরি করবে
+  // ===== ইন-অ্যাপ আপডেট কার্যকারিতার জন্য ফাংশনগুলো =====
+
+  Future<void> _checkForUpdate() async {
+    if (kIsWeb) return;
+
+    try {
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      String currentVersion = packageInfo.version;
+
+      // অনুগ্রহ করে নিচের লিংকে আপনার সঠিক GitHub ইউজারনেম ও রিপোজিটরির নাম দিন
+      final response = await http.get(Uri.parse(
+          'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO_NAME/main/update.json'));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+
+        String platformKey = '';
+        if (Platform.isAndroid) platformKey = 'android';
+        if (Platform.isWindows) platformKey = 'windows';
+
+        if (platformKey.isNotEmpty && json.containsKey(platformKey)) {
+          String latestVersion = json[platformKey]['version'];
+          String downloadUrl = json[platformKey]['url'];
+
+          if (latestVersion.compareTo(currentVersion) > 0) {
+            _showUpdateDialog(latestVersion, downloadUrl);
+          } else {
+            _showUpToDateSnackbar();
+          }
+        }
+      }
+    } catch (e) {
+      print('Failed to check for updates: $e');
+    }
+  }
+
+  void _showUpToDateSnackbar() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('You are using the latest version.'),
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(10),
+          ),
+        );
+      }
+    });
+  }
+
+  void _showUpdateDialog(String version, String url) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        bool isAndroid = Platform.isAndroid;
+        String buttonText = isAndroid ? "Update Now" : "Download";
+
+        return AlertDialog(
+          title: const Text("New Update Available!"),
+          content: Text("A new version (v$version) is available. Would you like to get it?"),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Later"),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: Text(buttonText),
+              onPressed: () {
+                Navigator.of(context).pop();
+                if (isAndroid) {
+                  _startAndroidUpdate(url);
+                } else {
+                  _launchDownloadUrl(url);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _startAndroidUpdate(String url) async {
+    try {
+      OtaUpdate().execute(url).listen(
+        (OtaEvent event) {
+          print('EVENT: ${event.status} : ${event.value}');
+        },
+      );
+    } catch (e) {
+      print('Failed to start OTA update: $e');
+    }
+  }
+
+  void _launchDownloadUrl(String url) async {
+    final Uri downloadUri = Uri.parse(url);
+    if (await canLaunchUrl(downloadUri)) {
+      await launchUrl(downloadUri, mode: LaunchMode.externalApplication);
+    } else {
+      print('Could not launch $url');
+    }
+  }
+
+  // একটি helper widget যা প্রতিটি কার্ড তৈরি করবে (অপরিবর্তিত)
   Widget _buildClickableCard(CardItem item) {
     return Card(
       elevation: 4,
