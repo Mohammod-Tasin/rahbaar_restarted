@@ -1,0 +1,10 @@
+{
+  "android": {
+    "version": "23.03.01",
+    "url": "https://github.com/Mohammod-Tasin/rahbaar_restarted/releases/download/23.03.01/app-release.apk"
+  },
+  "windows": {
+    "version": "23.03.01",
+    "url": "https://github.com/Mohammod-Tasin/rahbaar_restarted/releases/download/23.03.01/rahbar_restarted.zip"
+  }
+}
